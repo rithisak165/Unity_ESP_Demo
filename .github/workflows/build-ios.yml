@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
-    name: Build & Package iOS IPA 🍏
-    runs-on: macos-14
+  build-unity-xcode:
+    name: 1. Export Unity Xcode Project (Ubuntu) 🐧
+    runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
@@ -34,35 +34,76 @@ jobs:
         with:
           targetPlatform: iOS
           projectPath: .
-          buildsPath: build/iOS
+          buildsPath: build
 
-      - name: Compile Native Xcode Project & Package IPA
+      - name: Inspect Build Output Directory
         run: |
-          cd build/iOS/iOS
+          echo "Build directory listing:"
+          ls -la build/
+          if [ -d "build/iOS" ]; then
+            ls -la build/iOS/
+          fi
+
+      - name: Upload Xcode Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-project
+          path: build/iOS
+          retention-days: 1
+
+  package-ipa:
+    name: 2. Compile & Package iOS IPA (macOS) 🍏
+    runs-on: macos-latest
+    needs: build-unity-xcode
+    timeout-minutes: 30
+
+    steps:
+      - name: Download Xcode Project Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: xcode-project
+          path: build/iOS
+
+      - name: Compile Xcode Project & Package IPA
+        run: |
+          cd build/iOS
           echo "Current Directory: $(pwd)"
+          ls -la
           
+          # Find where Unity-iPhone.xcodeproj is located
+          XCODEPROJ=$(find . -name "Unity-iPhone.xcodeproj" -maxdepth 2 | head -n 1)
+          if [ -z "$XCODEPROJ" ]; then
+            echo "Error: Unity-iPhone.xcodeproj not found!"
+            exit 1
+          fi
+          XCODE_DIR=$(dirname "$XCODEPROJ")
+          cd "$XCODE_DIR"
+          echo "Building in: $(pwd)"
+
           # 1. Compile and Archive using Xcode CLI
-          xcodebuild -project Unity-iPhone.xcodeproj \
+          xcodebuild clean archive \
+            -project Unity-iPhone.xcodeproj \
             -scheme Unity-iPhone \
             -configuration Release \
             -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -archivePath $PWD/build/Unity-iPhone.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            archive
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
           # 2. Package into standard iOS IPA Structure
           mkdir -p Payload
           cp -r build/Unity-iPhone.xcarchive/Products/Applications/Unity-iPhone.app Payload/
           zip -r Unity_ESP_Demo.ipa Payload
 
-          echo "IPA Created Successfully: $(ls -lh Unity_ESP_Demo.ipa)"
+          echo "IPA Created Successfully:"
+          ls -lh Unity_ESP_Demo.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Unity_ESP_Demo-Release-IPA
-          path: build/iOS/iOS/Unity_ESP_Demo.ipa
+          path: build/iOS/**/Unity_ESP_Demo.ipa
           retention-days: 14
-
