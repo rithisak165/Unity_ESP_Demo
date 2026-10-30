@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 26
+  productName: Unity_ESP_Demo
+  companyName: Rithisak
+  bundleVersion: 1.0.0
+  bundleVersionCode: 1
+  defaultIsFullScreen: 1
+  defaultScreenOrientation: 3
+  allowedAutorotateToPortrait: 1
+  allowedAutorotateToPortraitUpsideDown: 1
+  allowedAutorotateToLandscapeRight: 1
+  allowedAutorotateToLandscapeLeft: 1
+  useOSAutorotation: 1
+  use32BitDisplayBuffer: 1
+  appleDeveloperTeamID: 
+  iOSRequirePersistentWiFi: 0
+  iPhoneApplicationDisplayName: Unity_ESP_Demo
+  iPhoneBundleIdentifier: com.rithisak.unityespdemo
+  iOSURLSchemes: []
+  iPhoneTargetDevice: 2
+  targetOSVersionString: 16.0
+  iPhoneSdkVersion: 988
+  iPhoneBuildNumber: 1
+  scriptingBackend: 1
+  architecture: 1
+  graphicsAPIs:
+  - 16
+  iOSManualSigningProvisioningProfileID: 
+  iOSManualSigningProvisioningProfileType: 0
+  cloudProjectId: 
+  projectName: Unity_ESP_Demo
+

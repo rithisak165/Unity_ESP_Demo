@@ -1,0 +1,68 @@
+name: Build Unity iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build & Package iOS IPA 🍏
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-iOS-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-iOS-
+
+      - name: Build Unity iOS Xcode Project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: iOS
+          projectPath: .
+          buildsPath: build/iOS
+
+      - name: Compile Native Xcode Project & Package IPA
+        run: |
+          cd build/iOS/iOS
+          echo "Current Directory: $(pwd)"
+          
+          # 1. Compile and Archive using Xcode CLI
+          xcodebuild -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $PWD/build/Unity-iPhone.xcarchive \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+          # 2. Package into standard iOS IPA Structure
+          mkdir -p Payload
+          cp -r build/Unity-iPhone.xcarchive/Products/Applications/Unity-iPhone.app Payload/
+          zip -r Unity_ESP_Demo.ipa Payload
+
+          echo "IPA Created Successfully: $(ls -lh Unity_ESP_Demo.ipa)"
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity_ESP_Demo-Release-IPA
+          path: build/iOS/iOS/Unity_ESP_Demo.ipa
+          retention-days: 14
+
